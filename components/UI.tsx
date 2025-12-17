@@ -58,6 +58,7 @@ export const UI: React.FC<UIProps> = ({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between text-white overflow-hidden">
+      <div style={{color: 'white', fontSize: '50px'}}>hello world</div>
       
       {/* Top Left Logo */}
       <header className="absolute top-6 left-6">
