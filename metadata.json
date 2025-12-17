@@ -1,0 +1,7 @@
+{
+  "name": "Holiday Particle Studio",
+  "description": "An interactive, hand-controlled 3D particle experience with a Christmas theme.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
