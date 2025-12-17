@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { ShapeType, ParticleConfig, DAILY_LORE, HandGestures } from '../types';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { ShapeType, ParticleConfig, HandGestures } from '../types';
 
 interface UIProps {
   config: ParticleConfig;
   setConfig: React.Dispatch<React.SetStateAction<ParticleConfig>>;
   hasPermission: boolean;
   handStateRef: React.MutableRefObject<HandGestures>;
+  cameraEnabled: boolean;
   onToggleCamera: () => void;
   loading: boolean;
 }
@@ -18,183 +20,110 @@ const TEMPLATES = [
   ShapeType.RANDOM
 ];
 
-const COLORS = [
-  '#ffffff', // Snow
-  '#ffd700', // Gold
-  '#00ff00', // Green
-  '#00ffff', // Cyan
-  '#ff00ff', // Magenta
-  '#ff9900', // Orange
-];
+const Logo: React.FC = () => (
+  <div className="flex items-center select-none pointer-events-none">
+    {/* Standalone OOBE Vector Logo */}
+    <div className="h-16 w-auto relative text-white drop-shadow-2xl">
+      <svg viewBox="0 0 160 80" fill="currentColor" className="h-full w-full" preserveAspectRatio="xMidYMid meet">
+        <path d="M40 65 A25 25 0 1 1 40 15 A25 25 0 0 1 40 65 M40 25 A15 15 0 1 0 40 55 A15 15 0 0 0 40 25" />
+        <path d="M80 65 A25 25 0 1 1 80 15 A25 25 0 0 1 80 65 M80 25 A15 15 0 1 0 80 55 A15 15 0 0 0 80 25" />
+        <path d="M110 20 Q 125 10 140 22 H 160 L 158 30 H 140 Q 128 30 120 25 L 110 20" />
+        <path d="M122 36 H 155 L 153 44 H 122 V 36" />
+        <path d="M120 55 Q 128 50 140 50 H 158 L 160 58 H 140 Q 125 70 110 60 L 120 55" />
+      </svg>
+    </div>
+  </div>
+);
 
 export const UI: React.FC<UIProps> = ({ 
   config, 
   setConfig, 
-  hasPermission, 
+  cameraEnabled,
   onToggleCamera,
-  loading,
-  handStateRef
+  loading
 }) => {
-  const [loreShape, setLoreShape] = useState<ShapeType | null>(null);
-  const [loreDate, setLoreDate] = useState<string>('');
-  const [debugStr, setDebugStr] = useState('');
+  // Calculate position for the sliding background
+  const activeIndex = TEMPLATES.indexOf(config.shape);
   
-  // Daily Lore Check
-  useEffect(() => {
-    const today = new Date();
-    const month = today.getMonth() + 1;
-    const day = today.getDate();
-    const key = `${month}-${day}`;
-    if (DAILY_LORE[key]) {
-      setLoreShape(DAILY_LORE[key]);
-      setLoreDate(`Dec ${day}`);
-    } else {
-       setLoreShape(ShapeType.TREE); 
-       setLoreDate("Holiday Mode");
-    }
-  }, []);
-
-  // Debug Loop for gesture stats
-  useEffect(() => {
-    const interval = setInterval(() => {
-        const s = handStateRef.current;
-        if (s.detected) {
-            setDebugStr(`Tension: ${s.tension.toFixed(2)} | Close: ${s.closure.toFixed(2)}`);
-        } else {
-            setDebugStr(hasPermission ? "Looking for hands..." : "Mouse Control Mode");
-        }
-    }, 200);
-    return () => clearInterval(interval);
-  }, [hasPermission]);
+  // Ref for the toggle container to center the active pill
+  const toggleRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-4 md:p-6 text-white overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-6 text-white overflow-hidden">
       
-      {/* Header */}
-      <header className="flex justify-between items-start pointer-events-auto">
-        <div>
-          <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-white drop-shadow-md font-serif">
-            Holiday Particle Studio
-          </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
-              {loreDate}
-            </span>
-            {loreShape && (
-              <button 
-                onClick={() => setConfig(prev => ({ ...prev, shape: loreShape }))}
-                className="bg-green-700/80 hover:bg-green-600 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold transition-all border border-green-400 shadow-lg"
-              >
-                Apply Lore: {loreShape}
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col items-end gap-2">
-            {!hasPermission && (
-                <button 
-                    onClick={onToggleCamera}
-                    className="bg-white text-red-700 px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-gray-100 transition-colors pointer-events-auto"
-                >
-                    {loading ? "Loading AI..." : "Enable Hand Control"}
-                </button>
-            )}
-             <div className="text-xs font-mono opacity-60 bg-black/20 p-1 rounded">
-                {debugStr}
-            </div>
-        </div>
+      {/* Top Left Logo */}
+      <header className="absolute top-6 left-6">
+        <Logo />
       </header>
 
-      {/* Main Controls - Bottom Left */}
-      <div className="pointer-events-auto w-full md:w-80 bg-black/10 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl mt-auto">
+      {/* Bottom Center: Template Toggles */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto">
+        <div 
+            ref={toggleRef}
+            className="relative flex items-center bg-black/20 backdrop-blur-xl border border-white/10 rounded-full p-2 gap-2 shadow-2xl"
+        >
+          {/* Sliding Active Background */}
+          {/* We assume fixed width buttons for the sliding effect to work simply, 
+              or we could measure refs. For this prompt, fixed dimensions logic is cleaner. 
+              The prompt asked for 55-60px height and 24px padding. */}
+          <div 
+            className="absolute top-2 bottom-2 bg-white rounded-full transition-all duration-700 ease-in-out shadow-[0_0_20px_rgba(255,255,255,0.4)]"
+            style={{ 
+                left: `${activeIndex * 100 / TEMPLATES.length}%`, 
+                width: `${100 / TEMPLATES.length}%`,
+                transform: `translateX(${activeIndex === 0 ? '4px' : activeIndex === TEMPLATES.length - 1 ? '-4px' : '0px'})`,
+                // Adjust width slightly to account for the padding gap logic if needed, 
+                // but percentage based left is safest for responsive.
+                // Let's rely on the buttons being flex-1
+            }}
+          />
+
+          {TEMPLATES.map((t, i) => (
+            <button
+              key={t}
+              onClick={() => setConfig(prev => ({ ...prev, shape: t }))}
+              className={`
+                relative z-10 h-[50px] px-6 rounded-full flex items-center justify-center
+                text-sm font-bold uppercase tracking-widest transition-colors duration-700
+                ${config.shape === t ? 'text-[#d70200]' : 'text-white hover:bg-white/10'}
+              `}
+              style={{ minWidth: '100px' }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom Right: Camera Toggle */}
+      <div className="absolute bottom-8 right-8 flex flex-col items-end gap-4 pointer-events-auto">
         
-        {/* Shape Grid */}
-        <div className="mb-4">
-          <h3 className="text-xs uppercase tracking-widest opacity-70 mb-2 font-bold">Templates</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {TEMPLATES.map(t => (
-              <button
-                key={t}
-                onClick={() => setConfig(prev => ({ ...prev, shape: t }))}
+        <div className="flex items-center gap-3">
+             <span className="text-xs font-bold uppercase tracking-widest opacity-80 shadow-black drop-shadow-md">
+                {cameraEnabled ? "Camera On" : "Camera Off"}
+             </span>
+             {/* Toggle Switch */}
+            <button 
+                onClick={onToggleCamera}
                 className={`
-                  aspect-square rounded-lg flex items-center justify-center text-[10px] font-bold text-center p-1 transition-all
-                  ${config.shape === t 
-                    ? 'bg-white text-red-700 shadow-lg scale-105' 
-                    : 'bg-white/10 hover:bg-white/20 text-white'}
+                    w-16 h-9 rounded-full p-1 transition-colors duration-700 ease-in-out border border-white/20 shadow-xl
+                    ${cameraEnabled ? 'bg-white' : 'bg-black/40'}
                 `}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Sliders & Toggles */}
-        <div className="space-y-4">
-            
-            {/* Color Picker (Simple) */}
-            <div>
-                 <h3 className="text-xs uppercase tracking-widest opacity-70 mb-2 font-bold">Theme Color</h3>
-                 <div className="flex gap-2">
-                    {COLORS.map(c => (
-                        <button
-                            key={c}
-                            onClick={() => setConfig(prev => ({...prev, color: c}))}
-                            style={{ backgroundColor: c }}
-                            className={`w-6 h-6 rounded-full border-2 ${config.color === c ? 'border-white scale-110' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                        />
-                    ))}
-                    <input 
-                        type="color" 
-                        value={config.color}
-                        onChange={(e) => setConfig(prev => ({...prev, color: e.target.value}))}
-                        className="w-6 h-6 rounded-full overflow-hidden border-0 p-0"
-                    />
-                 </div>
-            </div>
-
-            {/* Mouse Fallback Controls (Only if no camera or hands not detected) */}
-            <div className="pt-2 border-t border-white/10">
-                <div className="flex items-center justify-between mb-2">
-                   <h3 className="text-xs uppercase tracking-widest opacity-70 font-bold">
-                       {hasPermission ? "Gesture Simulation" : "Manual Control"}
-                   </h3>
-                   <button 
-                     onClick={() => setConfig(prev => ({...prev, autoRotate: !prev.autoRotate}))}
-                     className={`text-[10px] px-2 py-0.5 rounded border ${config.autoRotate ? 'bg-white text-red-900' : 'border-white/30'}`}
-                   >
-                       Auto Rotate
-                   </button>
+            >
+                <div 
+                    className={`
+                        w-7 h-7 rounded-full shadow-md transition-transform duration-700 ease-in-out flex items-center justify-center
+                        ${cameraEnabled ? 'translate-x-7 bg-[#d70200]' : 'translate-x-0 bg-white'}
+                    `}
+                >
+                    {loading && cameraEnabled && (
+                        <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                    )}
                 </div>
-                
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] w-12">Expand</span>
-                        <input 
-                            type="range" min="0" max="1" step="0.01"
-                            className="flex-1 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
-                            onChange={(e) => {
-                                handStateRef.current.tension = parseFloat(e.target.value);
-                                // If using manual slider, force detection flag so it doesn't decay
-                                if (!hasPermission) handStateRef.current.detected = true;
-                            }}
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] w-12">Focus</span>
-                        <input 
-                            type="range" min="0" max="1" step="0.01"
-                            className="flex-1 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
-                            onChange={(e) => {
-                                handStateRef.current.closure = parseFloat(e.target.value);
-                                if (!hasPermission) handStateRef.current.detected = true;
-                            }}
-                        />
-                    </div>
-                </div>
-            </div>
+            </button>
         </div>
+        
+        {/* The video element in App.tsx will appear here visually due to placement */}
       </div>
     </div>
   );
