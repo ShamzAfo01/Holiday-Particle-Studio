@@ -110,7 +110,7 @@ const App: React.FC = () => {
             maxDistance={30}
             minDistance={5}
             maxPolarAngle={Math.PI / 2} 
-            autoRotate={true}
+            autoRotate={false}
             autoRotateSpeed={0.5}
             enableDamping={true}
             dampingFactor={0.1}
