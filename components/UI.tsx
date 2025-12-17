@@ -57,7 +57,6 @@ export const UI: React.FC<UIProps> = ({
   }, [config.shape]);
 
   return (
-  return (
     <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between text-white overflow-hidden">
       
       {/* Top Left Logo */}
