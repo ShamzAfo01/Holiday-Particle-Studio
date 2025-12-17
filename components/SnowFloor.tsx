@@ -3,20 +3,17 @@ import React, { useMemo } from 'react';
 import { Text3D } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Procedurally displace plane to look like snow piles
 const SnowMesh: React.FC = () => {
   const geometry = useMemo(() => {
-    const geo = new THREE.PlaneGeometry(60, 60, 64, 64);
+    const geo = new THREE.PlaneGeometry(80, 80, 64, 64);
     const posAttribute = geo.attributes.position;
     for (let i = 0; i < posAttribute.count; i++) {
       const x = posAttribute.getX(i);
-      const y = posAttribute.getY(i); // This is Z in world space before rotation
-      
+      const y = posAttribute.getY(i);
       const z = 
-        Math.sin(x * 0.2) * 0.5 + 
-        Math.cos(y * 0.15) * 0.5 + 
-        Math.sin(x * 0.5 + y * 0.5) * 0.2;
-      
+        Math.sin(x * 0.15) * 0.6 + 
+        Math.cos(y * 0.12) * 0.6 + 
+        Math.sin(x * 0.4 + y * 0.4) * 0.3;
       posAttribute.setZ(i, z);
     }
     geo.computeVertexNormals();
@@ -24,12 +21,12 @@ const SnowMesh: React.FC = () => {
   }, []);
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -4.5, 0]} receiveShadow>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -4.8, 0]} receiveShadow>
       <primitive object={geometry} />
       <meshStandardMaterial 
         color="#ffffff" 
-        roughness={0.9} 
-        metalness={0.1}
+        roughness={1} 
+        metalness={0.0}
       />
     </mesh>
   );
@@ -39,21 +36,34 @@ interface StyledTextProps {
     text: string;
     position: [number, number, number];
     colors?: string[];
+    scale?: number;
+    useNormalWhite?: boolean;
 }
 
-const StyledText: React.FC<StyledTextProps> = ({ text, position, colors = ['#D42426', '#165B33', '#FFD700'] }) => {
+const StyledText: React.FC<StyledTextProps> = ({ text, position, colors = ['#D42426', '#165B33', '#FFD700'], scale = 1.0, useNormalWhite = false }) => {
     const fontUrl = 'https://threejs.org/examples/fonts/helvetiker_bold.typeface.json';
 
+    if (useNormalWhite) {
+      return (
+        <group position={position} scale={scale}>
+          <Text3D font={fontUrl} size={1.2} height={0.1}>
+            {text}
+            <meshStandardMaterial color="#ffffff" roughness={0.1} metalness={0.1} />
+          </Text3D>
+        </group>
+      );
+    }
+
     return (
-        <group position={position} rotation={[-0.1, 0, 0]}>
+        <group position={position} rotation={[-0.1, 0, 0]} scale={scale}>
             {text.split('').map((char, index) => {
                 const color = colors[index % colors.length];
                 const xPos = index * 1.1;
-                const rot = [(Math.random()-0.5)*0.1, (Math.random() - 0.5) * 0.2, (Math.random()-0.5)*0.1];
+                const rot = [(Math.random()-0.5)*0.05, (Math.random() - 0.5) * 0.1, (Math.random()-0.5)*0.05];
                 
                 return (
                 <group key={index} position={[xPos, 0, 0]} rotation={[rot[0], rot[1], rot[2]] as any}>
-                    {/* 1. Main Color Letter */}
+                    {/* Main Color Letter */}
                     <Text3D
                     font={fontUrl}
                     size={1.2}
@@ -63,14 +73,10 @@ const StyledText: React.FC<StyledTextProps> = ({ text, position, colors = ['#D42
                     bevelThickness={0.02}
                     >
                     {char}
-                    <meshStandardMaterial 
-                        color={color} 
-                        roughness={0.2} 
-                        metalness={0.6} 
-                    />
+                    <meshStandardMaterial color={color} roughness={0.2} metalness={0.8} />
                     </Text3D>
 
-                    {/* 2. Snow Cap (White layer on top) */}
+                    {/* Snow Cap */}
                     <Text3D
                     font={fontUrl}
                     size={1.2}
@@ -82,15 +88,10 @@ const StyledText: React.FC<StyledTextProps> = ({ text, position, colors = ['#D42
                     bevelThickness={0.02}
                     >
                     {char}
-                    <meshStandardMaterial 
-                        color="#ffffff" 
-                        roughness={1} 
-                        emissive="#ffffff"
-                        emissiveIntensity={0.2}
-                    />
+                    <meshStandardMaterial color="#ffffff" roughness={1} emissive="#ffffff" emissiveIntensity={0.2} />
                     </Text3D>
                     
-                    {/* 3. Gold Trim (Layer behind) */}
+                    {/* Gold Trim */}
                     <Text3D
                     font={fontUrl}
                     size={1.25}
@@ -99,11 +100,7 @@ const StyledText: React.FC<StyledTextProps> = ({ text, position, colors = ['#D42
                     bevelEnabled={false}
                     >
                     {char}
-                    <meshStandardMaterial 
-                        color="#FFD700" 
-                        metalness={1} 
-                        roughness={0.2}
-                    />
+                    <meshStandardMaterial color="#FFD700" metalness={1} roughness={0.1} />
                     </Text3D>
                 </group>
                 );
@@ -112,9 +109,7 @@ const StyledText: React.FC<StyledTextProps> = ({ text, position, colors = ['#D42
     );
 }
 
-// 3D Text Component with Decorations
 const FestiveText: React.FC = () => {
-  // Get Current Date
   const dateStr = useMemo(() => {
       const d = new Date();
       const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -122,46 +117,39 @@ const FestiveText: React.FC = () => {
   }, []);
 
   return (
-    <group position={[0, -4.0, 4]}>
-      {/* Left: MERRY */}
-      {/* 5 letters * 1.1 width approx = 5.5 units */}
-      <StyledText text="MERRY" position={[-12, 0, 0]} />
-      
-      {/* Center: DATE */}
-      {/* Date is approx 6 chars. Center it. */}
-      {/* We use purely Gold/White for the date to distinguish it */}
-      <StyledText text={dateStr} position={[-3.5, 0, 1]} colors={['#FFD700']} />
+    <group position={[0, -4.4, 4]}>
+      {/* Date above MERRY */}
+      <StyledText text={dateStr} position={[-14, 2.0, 0]} useNormalWhite={true} scale={0.5} />
 
+      {/* Left: MERRY */}
+      <StyledText text="MERRY" position={[-14, 0, 0]} />
+      
       {/* Right: CHRISTMAS */}
-      {/* 9 letters * 1.1 = 9.9 units */}
-      <StyledText text="CHRISTMAS" position={[4, 0, 0]} />
+      <StyledText text="CHRISTMAS" position={[-5, 0, 0]} />
     </group>
   );
 };
 
-// Scattered Ornaments and Gifts
 const ScatteredDecorations: React.FC = () => {
   const items = useMemo(() => {
     const temp = [];
-    // Ornaments
-    for(let i=0; i<15; i++) {
+    for(let i=0; i<20; i++) {
         temp.push({
             type: 'sphere',
-            x: (Math.random() - 0.5) * 26, // Widened spread for longer text
-            z: (Math.random() - 0.5) * 10 + 6,
+            x: (Math.random() - 0.5) * 40,
+            z: (Math.random() - 0.5) * 15 + 6,
             scale: Math.random() * 0.3 + 0.2,
             color: Math.random() > 0.5 ? '#D42426' : '#FFD700',
             rotation: 0
         })
     }
-    // Gift Boxes
-    for(let i=0; i<8; i++) {
+    for(let i=0; i<12; i++) {
         temp.push({
             type: 'box',
-            x: (Math.random() - 0.5) * 20,
-            z: (Math.random() - 0.5) * 4 + 6,
+            x: (Math.random() - 0.5) * 35,
+            z: (Math.random() - 0.5) * 8 + 6,
             scale: Math.random() * 0.5 + 0.6,
-            color: Math.random() > 0.5 ? '#2f855a' : '#c53030', 
+            color: Math.random() > 0.5 ? '#165B33' : '#D42426', 
             rotation: Math.random() * Math.PI
         })
     }
@@ -169,13 +157,13 @@ const ScatteredDecorations: React.FC = () => {
   }, []);
 
   return (
-    <group position={[0, -4.2, 0]}>
+    <group position={[0, -4.5, 0]}>
         {items.map((item, i) => (
             <group key={i} position={[item.x, 0.2, item.z]} rotation={[0, item.rotation, 0]}>
                 {item.type === 'sphere' ? (
                     <mesh castShadow receiveShadow>
                         <sphereGeometry args={[item.scale, 32, 32]} />
-                        <meshStandardMaterial color={item.color} metalness={0.8} roughness={0.1} />
+                        <meshStandardMaterial color={item.color} metalness={0.9} roughness={0.1} />
                     </mesh>
                 ) : (
                     <group>
@@ -183,20 +171,18 @@ const ScatteredDecorations: React.FC = () => {
                             <boxGeometry args={[item.scale, item.scale, item.scale]} />
                             <meshStandardMaterial color={item.color} metalness={0.3} roughness={0.4} />
                         </mesh>
-                        <mesh position={[0, item.scale/2, 0]} scale={[1.02, 1.02, 0.2]}>
+                        <mesh position={[0, item.scale/2, 0]} scale={[1.05, 1.05, 0.1]}>
                              <boxGeometry args={[item.scale, item.scale, item.scale]} />
-                             <meshStandardMaterial color="#FFD700" metalness={0.6} roughness={0.3} />
+                             <meshStandardMaterial color="#FFD700" metalness={0.8} roughness={0.2} />
                         </mesh>
-                         <mesh position={[0, item.scale/2, 0]} scale={[0.2, 1.02, 1.02]}>
+                         <mesh position={[0, item.scale/2, 0]} scale={[0.1, 1.05, 1.05]}>
                              <boxGeometry args={[item.scale, item.scale, item.scale]} />
-                             <meshStandardMaterial color="#FFD700" metalness={0.6} roughness={0.3} />
+                             <meshStandardMaterial color="#FFD700" metalness={0.8} roughness={0.2} />
                         </mesh>
                     </group>
                 )}
             </group>
         ))}
-        <pointLight position={[-5, 2, 8]} intensity={1} color="#ffddaa" distance={10} />
-        <pointLight position={[5, 2, 8]} intensity={1} color="#ffddaa" distance={10} />
     </group>
   )
 }

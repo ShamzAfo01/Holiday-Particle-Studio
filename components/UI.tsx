@@ -22,7 +22,6 @@ const TEMPLATES = [
 
 const Logo: React.FC = () => (
   <div className="flex items-center select-none pointer-events-none">
-    {/* Standalone OOBE Vector Logo */}
     <div className="h-16 w-auto relative text-white drop-shadow-2xl">
       <svg viewBox="0 0 160 80" fill="currentColor" className="h-full w-full" preserveAspectRatio="xMidYMid meet">
         <path d="M40 65 A25 25 0 1 1 40 15 A25 25 0 0 1 40 65 M40 25 A15 15 0 1 0 40 55 A15 15 0 0 0 40 25" />
@@ -42,52 +41,54 @@ export const UI: React.FC<UIProps> = ({
   onToggleCamera,
   loading
 }) => {
-  // Calculate position for the sliding background
-  const activeIndex = TEMPLATES.indexOf(config.shape);
-  
-  // Ref for the toggle container to center the active pill
-  const toggleRef = useRef<HTMLDivElement>(null);
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Update sliding indicator whenever shape changes
+  useEffect(() => {
+    const activeIndex = TEMPLATES.indexOf(config.shape);
+    const activeButton = buttonRefs.current[activeIndex];
+    if (activeButton) {
+      setIndicatorStyle({
+        left: activeButton.offsetLeft,
+        width: activeButton.offsetWidth
+      });
+    }
+  }, [config.shape]);
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-6 text-white overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between text-white overflow-hidden">
       
       {/* Top Left Logo */}
       <header className="absolute top-6 left-6">
         <Logo />
       </header>
 
-      {/* Bottom Center: Template Toggles */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto">
+      {/* Bottom Center: Template Toggles (Dock) */}
+      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto">
         <div 
-            ref={toggleRef}
-            className="relative flex items-center bg-black/20 backdrop-blur-xl border border-white/10 rounded-full p-2 gap-2 shadow-2xl"
+          className="relative flex items-center bg-transparent h-[68px] px-1 overflow-visible"
         >
-          {/* Sliding Active Background */}
-          {/* We assume fixed width buttons for the sliding effect to work simply, 
-              or we could measure refs. For this prompt, fixed dimensions logic is cleaner. 
-              The prompt asked for 55-60px height and 24px padding. */}
+          {/* Sliding Active Background - 4px margin from top/bottom implied by h-60 vs parent */}
           <div 
-            className="absolute top-2 bottom-2 bg-white rounded-full transition-all duration-700 ease-in-out shadow-[0_0_20px_rgba(255,255,255,0.4)]"
+            className="absolute h-[60px] bg-white rounded-full transition-all duration-[700ms] ease-in-out"
             style={{ 
-                left: `${activeIndex * 100 / TEMPLATES.length}%`, 
-                width: `${100 / TEMPLATES.length}%`,
-                transform: `translateX(${activeIndex === 0 ? '4px' : activeIndex === TEMPLATES.length - 1 ? '-4px' : '0px'})`,
-                // Adjust width slightly to account for the padding gap logic if needed, 
-                // but percentage based left is safest for responsive.
-                // Let's rely on the buttons being flex-1
+              left: indicatorStyle.left, 
+              width: indicatorStyle.width,
+              top: '4px'
             }}
           />
 
           {TEMPLATES.map((t, i) => (
             <button
               key={t}
+              ref={el => { buttonRefs.current[i] = el; }}
               onClick={() => setConfig(prev => ({ ...prev, shape: t }))}
               className={`
-                relative z-10 h-[50px] px-6 rounded-full flex items-center justify-center
-                text-sm font-bold uppercase tracking-widest transition-colors duration-700
-                ${config.shape === t ? 'text-[#d70200]' : 'text-white hover:bg-white/10'}
+                relative z-10 h-[60px] px-6 mx-1 rounded-full flex items-center justify-center
+                text-xs font-bold uppercase tracking-[0.2em] transition-colors duration-700 ease-in-out whitespace-nowrap
+                ${config.shape === t ? 'text-[#d70200]' : 'text-white/80 hover:text-white'}
               `}
-              style={{ minWidth: '100px' }}
             >
               {t}
             </button>
@@ -95,35 +96,35 @@ export const UI: React.FC<UIProps> = ({
         </div>
       </div>
 
-      {/* Bottom Right: Camera Toggle */}
-      <div className="absolute bottom-8 right-8 flex flex-col items-end gap-4 pointer-events-auto">
-        
-        <div className="flex items-center gap-3">
-             <span className="text-xs font-bold uppercase tracking-widest opacity-80 shadow-black drop-shadow-md">
-                {cameraEnabled ? "Camera On" : "Camera Off"}
+      {/* Bottom Right: Camera Controller */}
+      <div className="absolute bottom-16 right-12 flex flex-col items-end gap-4 pointer-events-auto">
+        <div className="flex items-center gap-3 bg-transparent">
+             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white">
+                Vision
              </span>
-             {/* Toggle Switch */}
+             
+             {/* Simple Toggle Switch */}
             <button 
                 onClick={onToggleCamera}
                 className={`
-                    w-16 h-9 rounded-full p-1 transition-colors duration-700 ease-in-out border border-white/20 shadow-xl
+                    w-[64px] h-8 rounded-full p-1 transition-all duration-700 ease-in-out relative border border-white/30
                     ${cameraEnabled ? 'bg-white' : 'bg-black/40'}
                 `}
             >
                 <div 
                     className={`
-                        w-7 h-7 rounded-full shadow-md transition-transform duration-700 ease-in-out flex items-center justify-center
-                        ${cameraEnabled ? 'translate-x-7 bg-[#d70200]' : 'translate-x-0 bg-white'}
+                        w-6 h-6 rounded-full shadow-lg transition-transform duration-700 cubic-bezier(0.4, 0, 0.2, 1) flex items-center justify-center
+                        ${cameraEnabled ? 'translate-x-[30px] bg-[#d70200]' : 'translate-x-0 bg-white'}
                     `}
                 >
-                    {loading && cameraEnabled && (
-                        <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                    {loading && cameraEnabled ? (
+                        <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <div className={`w-1.5 h-1.5 rounded-full ${cameraEnabled ? 'bg-white' : 'bg-[#d70200]'}`} />
                     )}
                 </div>
             </button>
         </div>
-        
-        {/* The video element in App.tsx will appear here visually due to placement */}
       </div>
     </div>
   );
