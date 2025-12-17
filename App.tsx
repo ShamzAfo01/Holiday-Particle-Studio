@@ -11,7 +11,7 @@ import { useHandTracking } from './hooks/useHandTracking';
 import { ShapeType, ParticleConfig } from './types';
 
 const INITIAL_CONFIG: ParticleConfig = {
-  count: 50000, 
+  count: 20000, 
   color: '#ffd700', 
   shape: ShapeType.HEART,
   autoRotate: true,
@@ -77,42 +77,48 @@ const App: React.FC = () => {
       </div>
 
       {/* 3D Scene */}
-      <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 0, 18], fov: 40 }} dpr={[1, 2]} shadows>
-          <Suspense fallback={null}>
-            <ambientLight intensity={0.6} />
-            <spotLight position={[10, 15, 10]} angle={0.4} penumbra={1} intensity={2.0} castShadow />
-            <pointLight position={[-10, 5, -10]} intensity={1.0} color="#ffaa00" />
-            
-            <group position={[0, 0, 6]}>
-              <ParticleSystem 
-                count={config.count} 
-                shape={config.shape} 
-                color={config.color} 
-                gestureState={gestureState}
-                autoRotate={config.autoRotate}
-              />
-            </group>
-
-            <SnowSystem />
-            <Decorations />
-            <SnowFloor />
-
-            <fog attach="fog" args={['#d70200', 10, 50]} />
-
-            <OrbitControls 
-              enablePan={false} 
-              enableZoom={true} 
-              maxDistance={30}
-              minDistance={5}
-              maxPolarAngle={Math.PI / 2} 
-              autoRotate={false}
+      <Canvas 
+        className="absolute inset-0 z-0" 
+        camera={{ position: [0, 0, 18], fov: 40 }} 
+        dpr={[1, 2]} 
+        shadows
+      >
+        <Suspense fallback={null}>
+          <ambientLight intensity={0.6} />
+          <spotLight position={[10, 15, 10]} angle={0.4} penumbra={1} intensity={2.0} castShadow />
+          <pointLight position={[-10, 5, -10]} intensity={1.0} color="#ffaa00" />
+          
+          <group position={[0, 0, 6]}>
+            <ParticleSystem 
+              count={config.count} 
+              shape={config.shape} 
+              color={config.color} 
+              gestureState={gestureState}
+              autoRotate={config.autoRotate}
             />
-            
-            <Environment preset="sunset" />
-          </Suspense>
-        </Canvas>
-      </div>
+          </group>
+
+          <SnowSystem />
+          <Decorations />
+          <SnowFloor />
+
+          <fog attach="fog" args={['#d70200', 10, 50]} />
+
+          <OrbitControls 
+            enablePan={false} 
+            enableZoom={true} 
+            maxDistance={30}
+            minDistance={5}
+            maxPolarAngle={Math.PI / 2} 
+            autoRotate={true}
+            autoRotateSpeed={0.5}
+            enableDamping={true}
+            dampingFactor={0.1}
+          />
+          
+          <Environment preset="sunset" />
+        </Suspense>
+      </Canvas>
     </div>
   );
 };
