@@ -61,12 +61,12 @@ export const UI: React.FC<UIProps> = ({
       <div style={{color: 'white', fontSize: '50px'}}>hello world</div>
       
       {/* Top Left Logo */}
-      <header className="absolute top-6 left-6">
+      <header className="absolute top-6 left-6" style={{backgroundColor: 'red'}}>
         <Logo />
       </header>
 
       {/* Bottom Center: Template Toggles (Dock) */}
-      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto">
+      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto" style={{backgroundColor: 'blue'}}>
         <div 
           className="relative flex items-center bg-transparent h-[68px] px-1 overflow-visible"
         >
@@ -98,7 +98,7 @@ export const UI: React.FC<UIProps> = ({
       </div>
 
       {/* Bottom Right: Camera Controller */}
-      <div className="absolute bottom-16 right-12 flex flex-col items-end gap-4 pointer-events-auto">
+      <div className="absolute bottom-16 right-12 flex flex-col items-end gap-4 pointer-events-auto" style={{backgroundColor: 'green'}}>
         <div className="flex items-center gap-3 bg-transparent">
              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white">
                 Vision
