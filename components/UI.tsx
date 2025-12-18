@@ -1,18 +1,9 @@
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { ShapeType, ParticleConfig } from '../types';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { ShapeType, ParticleConfig, HandGestures } from '../types';
+// --- Constants and Configuration ---
 
-interface UIProps {
-  config: ParticleConfig;
-  setConfig: React.Dispatch<React.SetStateAction<ParticleConfig>>;
-  hasPermission: boolean;
-  handStateRef: React.MutableRefObject<HandGestures>;
-  cameraEnabled: boolean;
-  onToggleCamera: () => void;
-  loading: boolean;
-}
-
-const TEMPLATES = [
+const TEMPLATES: ShapeType[] = [
   ShapeType.HEART,
   ShapeType.FLOWER,
   ShapeType.FIREWORKS,
@@ -20,9 +11,24 @@ const TEMPLATES = [
   ShapeType.RANDOM
 ];
 
+const SHAPE_LABELS: Record<ShapeType, string> = {
+  [ShapeType.HEART]: 'Heart',
+  [ShapeType.FLOWER]: 'Flower',
+  [ShapeType.FIREWORKS]: 'Fireworks',
+  [ShapeType.TREE]: 'Tree',
+  [ShapeType.RANDOM]: 'Random'
+};
+
+const DOCK_CLASSES = "absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center bg-black/20 backdrop-blur-xl border border-white/10 rounded-full p-2 gap-1 shadow-2xl";
+const TEMPLATE_BUTTON_CLASSES = "relative z-10 h-12 px-6 rounded-full flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-all duration-300 ease-in-out whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#d70200]";
+const CAMERA_TOGGLE_CLASSES = "w-16 h-9 rounded-full p-1 transition-colors duration-300 ease-in-out border border-white/20 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#d70200]";
+const CAMERA_KNOB_CLASSES = "w-7 h-7 rounded-full shadow-md transition-transform duration-300 ease-in-out flex items-center justify-center";
+
+// --- Sub-components ---
+
 const Logo: React.FC = () => (
   <div className="flex items-center select-none pointer-events-none">
-    <div className="h-16 w-auto relative text-white drop-shadow-2xl">
+    <div className="h-16 w-auto relative text-white drop-shadow-lg">
       <svg viewBox="0 0 160 80" fill="currentColor" className="h-full w-full" preserveAspectRatio="xMidYMid meet">
         <path d="M40 65 A25 25 0 1 1 40 15 A25 25 0 0 1 40 65 M40 25 A15 15 0 1 0 40 55 A15 15 0 0 0 40 25" />
         <path d="M80 65 A25 25 0 1 1 80 15 A25 25 0 0 1 80 65 M80 25 A15 15 0 1 0 80 55 A15 15 0 0 0 80 25" />
@@ -34,97 +40,117 @@ const Logo: React.FC = () => (
   </div>
 );
 
-export const UI: React.FC<UIProps> = ({ 
-  config, 
-  setConfig, 
+// --- Main UI Component ---
+
+interface UIProps {
+  config: ParticleConfig;
+  setConfig: React.Dispatch<React.SetStateAction<ParticleConfig>>;
+  cameraEnabled: boolean;
+  onToggleCamera: () => void;
+  loading: boolean;
+}
+
+export const UI: React.FC<UIProps> = ({
+  config,
+  setConfig,
   cameraEnabled,
   onToggleCamera,
   loading
 }) => {
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+  const dockRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // Update sliding indicator whenever shape changes
-  useEffect(() => {
-    const activeIndex = TEMPLATES.indexOf(config.shape);
-    const activeButton = buttonRefs.current[activeIndex];
-    if (activeButton) {
-      setIndicatorStyle({
-        left: activeButton.offsetLeft,
-        width: activeButton.offsetWidth
-      });
+  useLayoutEffect(() => {
+    const measureAndUpdate = () => {
+      const activeIndex = Math.max(0, TEMPLATES.indexOf(config.shape));
+      const activeButton = buttonRefs.current[activeIndex];
+      if (activeButton && dockRef.current) {
+        setIndicatorStyle({
+          left: activeButton.offsetLeft,
+          width: activeButton.offsetWidth,
+        });
+      }
+    };
+    
+    // Initial measurement
+    requestAnimationFrame(measureAndUpdate);
+
+    const observer = new ResizeObserver(() => {
+        requestAnimationFrame(measureAndUpdate);
+    });
+
+    if (dockRef.current) {
+        observer.observe(dockRef.current);
     }
+    
+    // Also listen to window resize as a fallback
+    window.addEventListener('resize', measureAndUpdate);
+
+    return () => {
+      if (dockRef.current) {
+        observer.unobserve(dockRef.current);
+      }
+      window.removeEventListener('resize', measureAndUpdate);
+    };
   }, [config.shape]);
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between text-white overflow-hidden">
-      <div style={{color: 'white', fontSize: '50px'}}>hello world</div>
+    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-6 text-white overflow-hidden">
       
       {/* Top Left Logo */}
-      <header className="absolute top-6 left-6" style={{backgroundColor: 'red'}}>
+      <header className="absolute top-6 left-6">
         <Logo />
       </header>
 
       {/* Bottom Center: Template Toggles (Dock) */}
-      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto" style={{backgroundColor: 'blue'}}>
-        <div 
-          className="relative flex items-center bg-transparent h-[68px] px-1 overflow-visible"
-        >
-          {/* Sliding Active Background - 4px margin from top/bottom implied by h-60 vs parent */}
-          <div 
-            className="absolute h-[60px] bg-white rounded-full transition-all duration-[700ms] ease-in-out"
-            style={{ 
-              left: indicatorStyle.left, 
-              width: indicatorStyle.width,
-              top: '4px'
-            }}
-          />
+      <div ref={dockRef} className={DOCK_CLASSES}>
+        {/* Sliding Active Background */}
+        <div
+          className="absolute top-2 h-12 bg-white rounded-full transition-all duration-500 ease-in-out shadow-[0_0_20px_rgba(255,255,255,0.4)]"
+          style={indicatorStyle}
+        />
 
-          {TEMPLATES.map((t, i) => (
-            <button
-              key={t}
-              ref={el => { buttonRefs.current[i] = el; }}
-              onClick={() => setConfig(prev => ({ ...prev, shape: t }))}
-              className={`
-                relative z-10 h-[60px] px-6 mx-1 rounded-full flex items-center justify-center
-                text-xs font-bold uppercase tracking-[0.2em] transition-colors duration-700 ease-in-out whitespace-nowrap
-                ${config.shape === t ? 'text-[#d70200]' : 'text-white/80 hover:text-white'}
-              `}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        {TEMPLATES.map((t, i) => (
+          <button
+            key={t}
+            ref={el => { buttonRefs.current[i] = el; }}
+            onClick={() => setConfig(prev => ({ ...prev, shape: t }))}
+            aria-pressed={config.shape === t}
+            className={`
+              ${TEMPLATE_BUTTON_CLASSES}
+              ${config.shape === t ? 'text-[#d70200]' : 'text-white/80 hover:text-white hover:scale-105 active:scale-95'}
+            `}
+          >
+            {SHAPE_LABELS[t] || t}
+          </button>
+        ))}
       </div>
 
       {/* Bottom Right: Camera Controller */}
-      <div className="absolute bottom-16 right-12 flex flex-col items-end gap-4 pointer-events-auto" style={{backgroundColor: 'green'}}>
-        <div className="flex items-center gap-3 bg-transparent">
-             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white">
-                Vision
-             </span>
-             
-             {/* Simple Toggle Switch */}
-            <button 
-                onClick={onToggleCamera}
-                className={`
-                    w-[64px] h-8 rounded-full p-1 transition-all duration-700 ease-in-out relative border border-white/30
-                    ${cameraEnabled ? 'bg-white' : 'bg-black/40'}
-                `}
+      <div className="absolute bottom-8 right-8 flex flex-col items-end gap-4 pointer-events-auto">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold uppercase tracking-widest text-white/80">
+            Vision
+          </span>
+          <button
+            onClick={onToggleCamera}
+            aria-label={cameraEnabled ? "Disable camera" : "Enable camera"}
+            className={CAMERA_TOGGLE_CLASSES}
+          >
+            <div
+              className={`
+                ${CAMERA_KNOB_CLASSES}
+                ${cameraEnabled ? 'translate-x-7 bg-[#d70200]' : 'translate-x-0 bg-white'}
+              `}
             >
-                <div 
-                    className={`
-                        w-6 h-6 rounded-full shadow-lg transition-transform duration-700 cubic-bezier(0.4, 0, 0.2, 1) flex items-center justify-center
-                        ${cameraEnabled ? 'translate-x-[30px] bg-[#d70200]' : 'translate-x-0 bg-white'}
-                    `}
-                >
-                    {loading && cameraEnabled ? (
-                        <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                        <div className={`w-1.5 h-1.5 rounded-full ${cameraEnabled ? 'bg-white' : 'bg-[#d70200]'}`} />
-                    )}
-                </div>
-            </button>
+              {loading && cameraEnabled ? (
+                <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+              ) : (
+                <div className={`w-1.5 h-1.5 rounded-full ${cameraEnabled ? 'bg-white' : 'bg-[#d70200]'}`} />
+              )}
+            </div>
+          </button>
         </div>
       </div>
     </div>

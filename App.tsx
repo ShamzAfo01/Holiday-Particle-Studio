@@ -1,5 +1,6 @@
 
 import React, { useState, Suspense } from 'react';
+import './index.css';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import { ParticleSystem } from './components/ParticleSystem';
@@ -33,11 +34,9 @@ const App: React.FC = () => {
       <UI 
         config={config} 
         setConfig={setConfig} 
-        hasPermission={hasPermission} 
         onToggleCamera={toggleCamera}
         cameraEnabled={cameraEnabled}
         loading={loading}
-        handStateRef={gestureState}
       />
 
       {/* Hidden Processing Video */}
