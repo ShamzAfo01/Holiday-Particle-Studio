@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useRef, useCallback } from 'react';
 import { ShapeType, ParticleConfig } from '../types';
+import { cn } from '../utils/cn';
 
 // --- Constants and Configuration ---
 
@@ -8,25 +9,21 @@ const TEMPLATES: ShapeType[] = [
   ShapeType.FLOWER,
   ShapeType.FIREWORKS,
   ShapeType.TREE,
-  ShapeType.RANDOM
+  ShapeType.RANDOM,
 ];
 
-const SHAPE_LABELS: Record<ShapeType, string> = {
-  [ShapeType.HEART]: 'Heart',
-  [ShapeType.FLOWER]: 'Flower',
-  [ShapeType.FIREWORKS]: 'Fireworks',
-  [ShapeType.TREE]: 'Tree',
-  [ShapeType.RANDOM]: 'Random'
-};
-
-const DOCK_CLASSES = "absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center bg-black/20 backdrop-blur-xl border border-white/10 rounded-full p-2 gap-1 shadow-2xl";
-const TEMPLATE_BUTTON_CLASSES = "relative z-10 h-12 px-6 rounded-full flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-all duration-300 ease-in-out whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#d70200]";
-const CAMERA_TOGGLE_CLASSES = "w-16 h-9 rounded-full p-1 transition-colors duration-300 ease-in-out border border-white/20 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#d70200]";
-const CAMERA_KNOB_CLASSES = "w-7 h-7 rounded-full shadow-md transition-transform duration-300 ease-in-out flex items-center justify-center";
+const DOCK_CLASSES =
+  'absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center bg-black/20 backdrop-blur-xl border border-white/10 rounded-full p-2 gap-1 shadow-2xl max-w-[90vw] overflow-x-auto';
+const TEMPLATE_BUTTON_CLASSES =
+  'relative z-10 h-12 px-6 rounded-full flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-colors duration-300 ease-in-out whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#d70200]';
+const CAMERA_TOGGLE_CLASSES =
+  'w-16 h-9 rounded-full p-1 transition-colors duration-300 ease-in-out border border-white/20 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#d70200]';
+const CAMERA_KNOB_CLASSES =
+  'w-7 h-7 rounded-full shadow-md transition-transform duration-300 ease-in-out flex items-center justify-center';
 
 // --- Sub-components ---
 
-const Logo: React.FC = () => (
+const Logo: React.FC = React.memo(() => (
   <div className="flex items-center select-none pointer-events-none">
     <div className="h-16 w-auto relative text-white drop-shadow-lg">
       <svg viewBox="0 0 160 80" fill="currentColor" className="h-full w-full" preserveAspectRatio="xMidYMid meet">
@@ -38,7 +35,8 @@ const Logo: React.FC = () => (
       </svg>
     </div>
   </div>
-);
+));
+Logo.displayName = 'Logo';
 
 // --- Main UI Component ---
 
@@ -50,104 +48,94 @@ interface UIProps {
   loading: boolean;
 }
 
-export const UI: React.FC<UIProps> = ({
-  config,
-  setConfig,
-  cameraEnabled,
-  onToggleCamera,
-  loading
-}) => {
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+export const UI: React.FC<UIProps> = ({ config, setConfig, cameraEnabled, onToggleCamera, loading }) => {
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
   const dockRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  useLayoutEffect(() => {
-    const measureAndUpdate = () => {
-      const activeIndex = Math.max(0, TEMPLATES.indexOf(config.shape));
-      const activeButton = buttonRefs.current[activeIndex];
-      if (activeButton && dockRef.current) {
-        setIndicatorStyle({
-          left: activeButton.offsetLeft,
-          width: activeButton.offsetWidth,
-        });
-      }
-    };
-    
-    // Initial measurement
-    requestAnimationFrame(measureAndUpdate);
-
-    const observer = new ResizeObserver(() => {
-        requestAnimationFrame(measureAndUpdate);
-    });
-
-    if (dockRef.current) {
-        observer.observe(dockRef.current);
+  const measureAndUpdateIndicator = useCallback(() => {
+    const activeIndex = Math.max(0, TEMPLATES.indexOf(config.shape));
+    const activeButton = buttonRefs.current[activeIndex];
+    if (activeButton) {
+      setIndicatorStyle({
+        left: activeButton.offsetLeft,
+        width: activeButton.offsetWidth,
+        opacity: 1,
+      });
     }
-    
-    // Also listen to window resize as a fallback
-    window.addEventListener('resize', measureAndUpdate);
+  }, [config.shape]);
+
+  useLayoutEffect(() => {
+    measureAndUpdateIndicator();
+
+    const handleResize = () => requestAnimationFrame(measureAndUpdateIndicator);
+    const dockElement = dockRef.current;
+
+    if (!dockElement) return;
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(dockElement);
+    window.addEventListener('resize', handleResize);
+    document.fonts?.ready.then(handleResize);
 
     return () => {
-      if (dockRef.current) {
-        observer.unobserve(dockRef.current);
-      }
-      window.removeEventListener('resize', measureAndUpdate);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
     };
-  }, [config.shape]);
+  }, [measureAndUpdateIndicator]);
 
   return (
     <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-6 text-white overflow-hidden">
-      
-      {/* Top Left Logo */}
       <header className="absolute top-6 left-6">
         <Logo />
       </header>
 
-      {/* Bottom Center: Template Toggles (Dock) */}
       <div ref={dockRef} className={DOCK_CLASSES}>
-        {/* Sliding Active Background */}
         <div
-          className="absolute top-2 h-12 bg-white rounded-full transition-all duration-500 ease-in-out shadow-[0_0_20px_rgba(255,255,255,0.4)]"
+          className="absolute top-2 h-12 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-[left,width,opacity] duration-500 ease-in-out"
           style={indicatorStyle}
         />
 
         {TEMPLATES.map((t, i) => (
           <button
             key={t}
-            ref={el => { buttonRefs.current[i] = el; }}
+            ref={el => {
+              buttonRefs.current[i] = el;
+            }}
             onClick={() => setConfig(prev => ({ ...prev, shape: t }))}
             aria-pressed={config.shape === t}
-            className={`
-              ${TEMPLATE_BUTTON_CLASSES}
-              ${config.shape === t ? 'text-[#d70200]' : 'text-white/80 hover:text-white hover:scale-105 active:scale-95'}
-            `}
+            className={cn(
+              TEMPLATE_BUTTON_CLASSES,
+              config.shape === t
+                ? 'text-[#d70200]'
+                : 'text-white/80 hover:text-white hover:scale-105 active:scale-95'
+            )}
           >
-            {SHAPE_LABELS[t] || t}
+            {t}
           </button>
         ))}
       </div>
 
-      {/* Bottom Right: Camera Controller */}
       <div className="absolute bottom-8 right-8 flex flex-col items-end gap-4 pointer-events-auto">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-white/80">
-            Vision
-          </span>
+          <span className="text-xs font-bold uppercase tracking-widest text-white/80">Vision</span>
           <button
             onClick={onToggleCamera}
-            aria-label={cameraEnabled ? "Disable camera" : "Enable camera"}
+            aria-label={cameraEnabled ? 'Disable camera' : 'Enable camera'}
             className={CAMERA_TOGGLE_CLASSES}
           >
             <div
-              className={`
-                ${CAMERA_KNOB_CLASSES}
-                ${cameraEnabled ? 'translate-x-7 bg-[#d70200]' : 'translate-x-0 bg-white'}
-              `}
+              className={cn(
+                CAMERA_KNOB_CLASSES,
+                cameraEnabled ? 'translate-x-7 bg-[#d70200]' : 'translate-x-0 bg-white'
+              )}
             >
               {loading && cameraEnabled ? (
                 <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
               ) : (
-                <div className={`w-1.5 h-1.5 rounded-full ${cameraEnabled ? 'bg-white' : 'bg-[#d70200]'}`} />
+                <div
+                  className={cn('w-1.5 h-1.5 rounded-full', cameraEnabled ? 'bg-white' : 'bg-[#d70200]')}
+                />
               )}
             </div>
           </button>
