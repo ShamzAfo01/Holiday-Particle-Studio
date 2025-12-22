@@ -117,10 +117,17 @@ const StyledText: React.FC<StyledTextProps> = ({ text, position, colors = ['#D42
 }
 
 const FestiveText: React.FC = () => {
+  const dateText = useMemo(() => {
+    const date = new Date();
+    const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+    const day = date.getDate();
+    return `${month} ${day}`;
+  }, []);
+
   return (
     <group position={[0, -4.4, 4]}>
       {/* Date aligned to the start of MERRY */}
-      <StyledText text="DEC 17" position={[-16, 2.8, 0]} useNormalWhite={true} scale={0.4} />
+      <StyledText text={dateText} position={[-16, 2.8, 0]} useNormalWhite={true} scale={0.4} />
 
       {/* Left: MERRY */}
       <StyledText text="MERRY" position={[-16, 0, 0]} />
