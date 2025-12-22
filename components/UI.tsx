@@ -1,144 +1,120 @@
-import React, { useState, useLayoutEffect, useRef, useCallback } from 'react';
-import { ShapeType, ParticleConfig } from '@/types';
-import { cn } from '@/utils/cn';
 
-// --- Constants and Configuration ---
-
-const TEMPLATES: ShapeType[] = [
-  ShapeType.HEART,
-  ShapeType.FLOWER,
-  ShapeType.FIREWORKS,
-  ShapeType.TREE,
-  ShapeType.RANDOM,
-];
-
-const DOCK_CLASSES =
-  'absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center bg-black/20 backdrop-blur-xl border border-white/10 rounded-full p-2 gap-1 shadow-2xl max-w-[90vw] overflow-x-auto';
-const TEMPLATE_BUTTON_CLASSES =
-  'relative z-10 h-12 px-6 rounded-full flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-colors duration-300 ease-in-out whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#d70200]';
-const CAMERA_TOGGLE_CLASSES =
-  'w-16 h-9 rounded-full p-1 transition-colors duration-300 ease-in-out border border-white/20 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#d70200]';
-const CAMERA_KNOB_CLASSES =
-  'w-7 h-7 rounded-full shadow-md transition-transform duration-300 ease-in-out flex items-center justify-center';
-
-// --- Sub-components ---
-
-const Logo: React.FC = React.memo(() => (
-  <div className="flex items-center select-none pointer-events-none">
-    <div className="h-16 w-auto relative text-white drop-shadow-lg">
-      <svg viewBox="0 0 160 80" fill="currentColor" className="h-full w-full" preserveAspectRatio="xMidYMid meet">
-        <path d="M40 65 A25 25 0 1 1 40 15 A25 25 0 0 1 40 65 M40 25 A15 15 0 1 0 40 55 A15 15 0 0 0 40 25" />
-        <path d="M80 65 A25 25 0 1 1 80 15 A25 25 0 0 1 80 65 M80 25 A15 15 0 1 0 80 55 A15 15 0 0 0 80 25" />
-        <path d="M110 20 Q 125 10 140 22 H 160 L 158 30 H 140 Q 128 30 120 25 L 110 20" />
-        <path d="M122 36 H 155 L 153 44 H 122 V 36" />
-        <path d="M120 55 Q 128 50 140 50 H 158 L 160 58 H 140 Q 125 70 110 60 L 120 55" />
-      </svg>
-    </div>
-  </div>
-));
-Logo.displayName = 'Logo';
-
-// --- Main UI Component ---
+import React, { useState, useEffect, useRef } from 'react';
+import { ShapeType, ParticleConfig, HandGestures } from '../types';
 
 interface UIProps {
   config: ParticleConfig;
   setConfig: React.Dispatch<React.SetStateAction<ParticleConfig>>;
+  hasPermission: boolean;
+  handStateRef: React.MutableRefObject<HandGestures>;
   cameraEnabled: boolean;
   onToggleCamera: () => void;
   loading: boolean;
 }
 
-export const UI: React.FC<UIProps> = ({ config, setConfig, cameraEnabled, onToggleCamera, loading }) => {
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
-  const dockRef = useRef<HTMLDivElement>(null);
+const TEMPLATES = [
+  ShapeType.HEART,
+  ShapeType.FLOWER,
+  ShapeType.FIREWORKS,
+  ShapeType.TREE,
+  ShapeType.RANDOM
+];
+
+const Logo: React.FC = () => (
+  <div className="flex items-center select-none pointer-events-none">
+    <div className="h-10 w-auto relative text-[#111111]">
+      <svg width="51" height="28" viewBox="0 0 51 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17 28H22L25.5 25H30.6972C31.8727 25 33.0219 24.6521 34 24H45.5L47.5 20H38.5V17H43.5L46 12.5H37L35 9.5H48.5L51 5.5H35V5.12132C35 3.76306 34.4604 2.46043 33.5 1.5C32.5396 0.539566 31.2369 0 29.8787 0H22L25 4H27.9393C28.6185 4 29.2698 4.26978 29.75 4.75C30.2302 5.23022 30.5 5.88153 30.5 6.56066V7.34861C30.5 7.77335 30.3743 8.18858 30.1387 8.54199C29.7397 9.1405 29.0679 9.5 28.3486 9.5H25L26.5 13.5H30.5C31.4443 13.5 32.3334 13.9446 32.9 14.7C33.2895 15.2193 33.5 15.8509 33.5 16.5V17.1324C33.5 18.3282 33.025 19.475 32.1794 20.3206C31.4183 21.0817 30.4101 21.5454 29.337 21.6279L24.5 22L17 28Z" fill="currentColor"/>
+        <path d="M18 14.5C18 19.4706 13.9706 23.5 9 23.5C4.02944 23.5 0 19.4706 0 14.5C0 9.52944 4.02944 5.5 9 5.5C13.9706 5.5 18 9.52944 18 14.5ZM3.53376 14.5C3.53376 17.5189 5.98108 19.9662 9 19.9662C12.0189 19.9662 14.4662 17.5189 14.4662 14.5C14.4662 11.4811 12.0189 9.03376 9 9.03376C5.98108 9.03376 3.53376 11.4811 3.53376 14.5Z" fill="currentColor"/>
+        <path d="M27 14.5C27 19.4706 22.9706 23.5 18 23.5C13.0294 23.5 9 19.4706 9 14.5C9 9.52944 13.0294 5.5 18 5.5C22.9706 5.5 27 9.52944 27 14.5ZM12.5338 14.5C12.5338 17.5189 14.9811 19.9662 18 19.9662C21.0189 19.9662 23.4662 17.5189 23.4662 14.5C23.4662 11.4811 21.0189 9.03376 18 9.03376C14.9811 9.03376 12.5338 11.4811 12.5338 14.5Z" fill="currentColor"/>
+      </svg>
+    </div>
+  </div>
+);
+
+export const UI: React.FC<UIProps> = ({ 
+  config, 
+  setConfig, 
+  cameraEnabled,
+  onToggleCamera,
+  loading
+}) => {
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const measureAndUpdateIndicator = useCallback(() => {
-    const activeIndex = Math.max(0, TEMPLATES.indexOf(config.shape));
+  useEffect(() => {
+    const activeIndex = TEMPLATES.indexOf(config.shape);
     const activeButton = buttonRefs.current[activeIndex];
     if (activeButton) {
       setIndicatorStyle({
         left: activeButton.offsetLeft,
-        width: activeButton.offsetWidth,
-        opacity: 1,
+        width: activeButton.offsetWidth
       });
     }
   }, [config.shape]);
 
-  useLayoutEffect(() => {
-    measureAndUpdateIndicator();
-
-    const handleResize = () => requestAnimationFrame(measureAndUpdateIndicator);
-    const dockElement = dockRef.current;
-
-    if (!dockElement) return;
-
-    const resizeObserver = new ResizeObserver(handleResize);
-    resizeObserver.observe(dockElement);
-    window.addEventListener('resize', handleResize);
-    document.fonts?.ready.then(handleResize);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [measureAndUpdateIndicator]);
-
   return (
-    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-6 text-white overflow-hidden">
-      <header className="absolute top-6 left-6">
+    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between text-white overflow-hidden">
+      
+      {/* Top Left Logo */}
+      <header className="absolute top-8 left-8">
         <Logo />
       </header>
 
-      <div ref={dockRef} className={DOCK_CLASSES}>
-        <div
-          className="absolute top-2 h-12 bg-white rounded-full shadow-xl transition-all duration-500 ease-in-out"
-          style={indicatorStyle}
-        />
-
-        {TEMPLATES.map((t, i) => (
-          <button
-            key={t}
-            ref={el => {
-              buttonRefs.current[i] = el;
+      {/* Bottom Center: Template Toggles */}
+      <div className="absolute bottom-[28px] left-1/2 -translate-x-1/2 pointer-events-auto">
+        <div className="relative flex items-center bg-transparent h-[68px] px-1">
+          {/* Sliding Indicator with 4px vertical offset */}
+          <div 
+            className="absolute h-[60px] bg-white rounded-full transition-all duration-700 ease-in-out"
+            style={{ 
+              left: indicatorStyle.left, 
+              width: indicatorStyle.width,
+              top: '4px'
             }}
-            onClick={() => setConfig(prev => ({ ...prev, shape: t }))}
-            aria-pressed={config.shape === t}
-            className={cn(
-              TEMPLATE_BUTTON_CLASSES,
-              config.shape === t
-                ? 'text-[#d70200]'
-                : 'text-white/80 hover:text-white hover:scale-105 active:scale-95'
-            )}
-          >
-            {t}
-          </button>
-        ))}
+          />
+
+          {TEMPLATES.map((t, i) => (
+            <button
+              key={t}
+              ref={el => { buttonRefs.current[i] = el; }}
+              onClick={() => setConfig(prev => ({ ...prev, shape: t }))}
+              className={`
+                relative z-10 h-[60px] px-8 mx-1 rounded-full flex items-center justify-center
+                text-[10px] font-black uppercase tracking-[0.25em] transition-colors duration-700 ease-in-out whitespace-nowrap
+                ${config.shape === t ? 'text-[#d70200]' : 'text-white/60 hover:text-white'}
+              `}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="absolute bottom-8 right-8 flex flex-col items-end gap-4 pointer-events-auto">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-white/80">Vision</span>
-          <button
-            onClick={onToggleCamera}
-            aria-label={cameraEnabled ? 'Disable camera' : 'Enable camera'}
-            className={CAMERA_TOGGLE_CLASSES}
-          >
-            <div
-              className={cn(
-                CAMERA_KNOB_CLASSES,
-                cameraEnabled ? 'translate-x-7 bg-[#d70200]' : 'translate-x-0 bg-white'
-              )}
+      {/* Bottom Right: Vision Post Toggle */}
+      <div className="absolute bottom-[28px] right-12 flex items-center gap-6 pointer-events-auto">
+        <div className="flex items-center gap-4">
+             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/50">
+                Vision Post
+             </span>
+             
+            <button 
+                onClick={onToggleCamera}
+                className="w-[72px] h-9 rounded-full p-1 transition-all duration-500 bg-black/80 border border-white/10 relative"
             >
-              {loading && cameraEnabled ? (
-                <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-              ) : (
-                <div
-                  className={cn('w-1.5 h-1.5 rounded-full', cameraEnabled ? 'bg-white' : 'bg-[#d70200]')}
-                />
-              )}
-            </div>
-          </button>
+                <div 
+                    className={`
+                        w-7 h-7 rounded-full transition-transform duration-700 cubic-bezier(0.16, 1, 0.3, 1) flex items-center justify-center
+                        ${cameraEnabled ? 'translate-x-[36px] bg-[#d70200]' : 'translate-x-0 bg-white/20'}
+                    `}
+                >
+                    {loading && cameraEnabled ? (
+                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <div className={`w-2 h-2 rounded-full ${cameraEnabled ? 'bg-white shadow-[0_0_10px_white]' : 'bg-white/40'}`} />
+                    )}
+                </div>
+            </button>
         </div>
       </div>
     </div>

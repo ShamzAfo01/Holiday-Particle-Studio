@@ -1,3 +1,6 @@
+
+import React from 'react';
+
 export enum ShapeType {
   HEART = 'Heart',
   FLOWER = 'Flower',
@@ -34,6 +37,7 @@ export const DAILY_LORE: Record<string, ShapeType> = {
   '12-25': ShapeType.FIREWORKS, // Star -> Fireworks
 };
 
+// Global augmentation for Three.js elements in JSX to satisfy TypeScript
 declare global {
   namespace JSX {
     interface IntrinsicElements {
@@ -54,6 +58,10 @@ declare global {
       latheGeometry: any;
       fog: any;
       primitive: any;
+      pointsMaterial: any;
+      boxGeometry: any;
+      // Index signature to allow any other Three.js related elements used by @react-three/fiber
+      [elemName: string]: any;
     }
   }
 }

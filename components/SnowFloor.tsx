@@ -54,53 +54,60 @@ const StyledText: React.FC<StyledTextProps> = ({ text, position, colors = ['#D42
       );
     }
 
+    const metalMaterial = new THREE.MeshStandardMaterial({ color: '#A0A0A0', metalness: 0.9, roughness: 0.2 });
+
     return (
-        <group position={position} rotation={[-0.1, 0, 0]} scale={scale}>
+        <group position={position} rotation={[-0.05, 0, 0]} scale={scale}>
             {text.split('').map((char, index) => {
                 const color = colors[index % colors.length];
-                const xPos = index * 1.1;
-                const rot = [(Math.random()-0.5)*0.05, (Math.random() - 0.5) * 0.1, (Math.random()-0.5)*0.05];
+                const xPos = index * 1.25;
+                const rot = [(Math.random()-0.5)*0.02, (Math.random() - 0.5) * 0.05, (Math.random()-0.5)*0.02];
                 
                 return (
                 <group key={index} position={[xPos, 0, 0]} rotation={[rot[0], rot[1], rot[2]] as any}>
+                    {/* Pole */}
+                    <mesh position={[0.6, -1.5, 0]} material={metalMaterial}>
+                        <cylinderGeometry args={[0.04, 0.04, 3, 8]} />
+                    </mesh>
+
                     {/* Main Color Letter */}
                     <Text3D
-                    font={fontUrl}
-                    size={1.2}
-                    height={0.3}
-                    bevelEnabled
-                    bevelSize={0.02}
-                    bevelThickness={0.02}
+                        font={fontUrl}
+                        size={1.2}
+                        height={0.4}
+                        bevelEnabled
+                        bevelSize={0.02}
+                        bevelThickness={0.02}
                     >
-                    {char}
-                    <meshStandardMaterial color={color} roughness={0.2} metalness={0.8} />
+                        {char}
+                        <meshStandardMaterial color={color} roughness={0.2} metalness={0.8} />
                     </Text3D>
 
                     {/* Snow Cap */}
                     <Text3D
-                    font={fontUrl}
-                    size={1.2}
-                    height={0.1}
-                    position={[0, 0.25, 0.05]} 
-                    scale={[1, 0.8, 1]} 
-                    bevelEnabled
-                    bevelSize={0.03}
-                    bevelThickness={0.02}
+                        font={fontUrl}
+                        size={1.2}
+                        height={0.15}
+                        position={[0, 0.3, 0.1]} 
+                        scale={[1.05, 0.8, 1]} 
+                        bevelEnabled
+                        bevelSize={0.03}
+                        bevelThickness={0.02}
                     >
-                    {char}
-                    <meshStandardMaterial color="#ffffff" roughness={1} emissive="#ffffff" emissiveIntensity={0.2} />
+                        {char}
+                        <meshStandardMaterial color="#ffffff" roughness={1} emissive="#ffffff" emissiveIntensity={0.2} />
                     </Text3D>
                     
                     {/* Gold Trim */}
                     <Text3D
-                    font={fontUrl}
-                    size={1.25}
-                    height={0.1}
-                    position={[-0.025, -0.025, -0.1]} 
-                    bevelEnabled={false}
+                        font={fontUrl}
+                        size={1.25}
+                        height={0.1}
+                        position={[-0.02, -0.02, -0.15]} 
+                        bevelEnabled={false}
                     >
-                    {char}
-                    <meshStandardMaterial color="#FFD700" metalness={1} roughness={0.1} />
+                        {char}
+                        <meshStandardMaterial color="#FFD700" metalness={1} roughness={0.1} />
                     </Text3D>
                 </group>
                 );
@@ -110,22 +117,16 @@ const StyledText: React.FC<StyledTextProps> = ({ text, position, colors = ['#D42
 }
 
 const FestiveText: React.FC = () => {
-  const dateStr = useMemo(() => {
-      const d = new Date();
-      const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-      return `${months[d.getMonth()]} ${d.getDate()}`;
-  }, []);
-
   return (
     <group position={[0, -4.4, 4]}>
-      {/* Date above MERRY */}
-      <StyledText text={dateStr} position={[-14, 2.0, 0]} useNormalWhite={true} scale={0.5} />
+      {/* Date aligned to the start of MERRY */}
+      <StyledText text="DEC 17" position={[-16, 2.8, 0]} useNormalWhite={true} scale={0.4} />
 
       {/* Left: MERRY */}
-      <StyledText text="MERRY" position={[-14, 0, 0]} />
+      <StyledText text="MERRY" position={[-16, 0, 0]} />
       
       {/* Right: CHRISTMAS */}
-      <StyledText text="CHRISTMAS" position={[-5, 0, 0]} />
+      <StyledText text="CHRISTMAS" position={[-7.5, 0, 0]} />
     </group>
   );
 };
