@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Dancing+Script:wght@700&family=Inter:wght@300;400;600&family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
     <style>
       body {
         margin: 0;
@@ -18,7 +19,63 @@
       h1, h2, h3, .serif {
         font-family: 'Cinzel', serif;
       }
-      /* Custom scrollbar for glass panels */
+      .cursive, .festive-cursive {
+        font-family: 'Mountains of Christmas', cursive;
+      }
+      
+      .perspective-1000 {
+        perspective: 1000px;
+      }
+
+      @keyframes shake-vigorous {
+        0% { transform: translate(0, 0) rotate(0); }
+        10% { transform: translate(-8px, -2px) rotate(-4deg); }
+        20% { transform: translate(8px, 2px) rotate(4deg); }
+        30% { transform: translate(-8px, 4px) rotate(-2deg); }
+        40% { transform: translate(8px, -4px) rotate(2deg); }
+        50% { transform: translate(-8px, 2px) rotate(-4deg); }
+        60% { transform: translate(8px, -2px) rotate(4deg); }
+        70% { transform: translate(-8px, -4px) rotate(-2deg); }
+        80% { transform: translate(8px, 4px) rotate(2deg); }
+        90% { transform: translate(-8px, 2px) rotate(-4deg); }
+        100% { transform: translate(0, 0) rotate(0); }
+      }
+      .animate-shake-vigorous {
+        animation: shake-vigorous 0.4s cubic-bezier(.36,.07,.19,.97) both;
+      }
+
+      @keyframes shimmer {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
+      }
+      .shimmer-text {
+        background: linear-gradient(90deg, #ffffff 0%, #ffd700 50%, #ffffff 100%);
+        background-size: 200% auto;
+        color: transparent;
+        -webkit-background-clip: text;
+        background-clip: text;
+        animation: shimmer 5s linear infinite;
+      }
+
+      @keyframes star-float {
+        0%, 100% { transform: scale(1) translateY(0); opacity: 0.4; }
+        50% { transform: scale(1.4) translateY(-10px); opacity: 1; filter: drop-shadow(0 0 10px gold); }
+      }
+      .animate-star-float {
+        animation: star-float var(--star-duration, 3s) ease-in-out infinite;
+      }
+
+      .backface-hidden {
+        backface-visibility: hidden;
+      }
+      .transform-style-3d {
+        transform-style: preserve-3d;
+      }
+      .rotate-y-180 {
+        transform: rotateY(180deg);
+      }
+
+      /* Custom scrollbar */
       ::-webkit-scrollbar {
         width: 6px;
       }
@@ -46,6 +103,5 @@
 </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
