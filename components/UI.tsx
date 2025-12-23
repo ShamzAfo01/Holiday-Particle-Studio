@@ -59,10 +59,10 @@ export const UI: React.FC<UIProps> = ({
       {/* Top Left Logo & Title */}
       <header className="absolute top-8 left-8 flex items-center gap-4 animate-fade-in-down">
         <Logo />
-        <div className="opacity-90">
+        {/* <div className="opacity-90">
           <h1 className="text-xl font-bold tracking-widest uppercase font-serif text-white drop-shadow-md">Holiday</h1>
           <p className="text-[10px] tracking-[0.3em] uppercase text-gold font-light">Particle Studio</p>
-        </div>
+        </div> */}
       </header>
 
       {/* Main Controls Container - Bottom Center */}
