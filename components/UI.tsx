@@ -150,7 +150,7 @@ export const UI: React.FC<UIProps> = ({
 
       {/* Decorative Corner Text */}
       <div className="absolute bottom-10 right-10 text-right pointer-events-none opacity-50 hidden md:block">
-        <p className="font-serif italic text-white/60 text-sm">Crafted with</p>
+        <p className="font-serif italic text-white/60 text-sm">Crafted by UxGeek</p>
         <p className="font-black text-2xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-gold to-white/50">WONDER</p>
       </div>
 
