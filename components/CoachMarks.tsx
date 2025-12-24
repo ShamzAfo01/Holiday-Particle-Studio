@@ -24,9 +24,9 @@ export const CoachMarks: React.FC<CoachMarksProps> = ({ step, onClose }) => {
   return (
     <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 pointer-events-none z-50 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="relative pointer-events-auto">
-        
+
         {/* Close Button - Positioned outside and behind the main box */}
-        <button 
+        <button
           onClick={(e) => {
             e.stopPropagation();
             onClose();
@@ -41,15 +41,15 @@ export const CoachMarks: React.FC<CoachMarksProps> = ({ step, onClose }) => {
         <div className="group bg-white/5 backdrop-blur-[40px] border border-white/20 px-14 py-10 rounded-[60px] shadow-[0_40px_100px_rgba(0,0,0,0.4)] flex flex-col items-center gap-4 text-center min-w-[400px] relative z-10 overflow-hidden">
           {/* Deep frost texture overlay */}
           <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/frozen-wall.png')] pointer-events-none" />
-          
+
           {/* Realistic static box icon */}
           <div className="text-5xl mb-2 drop-shadow-xl z-10 select-none">
             🎁
           </div>
-          
+
           <div className="z-10 select-none">
             <h3 className="cursive text-4xl text-white mb-2 whitespace-nowrap drop-shadow-lg">
-              Secrets of the snowflake
+              Secrets are buried in the snow
             </h3>
             <p className="shimmer-text text-[12px] uppercase tracking-[0.5em] font-black">
               Click a box to reveal
